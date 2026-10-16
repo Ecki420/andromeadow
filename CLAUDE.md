@@ -91,6 +91,14 @@ Landing on planets, planet servers, world templates, space stations, docking, tr
 8. Player-hosted planets (rules, settings, graphics first; uploaded code only later, inside a strict sandbox).
 9. Paid hosting.
 
+## Design notes for later revisions (not built in Rev 1)
+
+### Spaceports and exports — the one thing every planet server has in common
+- Every planet, whether custom-hosted or on a world template, has exactly one **export place**. It is also the planet's **spaceport**: the only place where a ship lands from space and takes off again.
+- The export place exchanges goods obtained on the planet for **CC (cosmic credits)**, the currency spent in space while flying the ship.
+- **Every planet produces something and every planet must export something.** A planet with nothing to export is not allowed. World templates and host customisation set *what* and *how much*, never *whether*.
+- Design consequences to keep in mind when Rev 2+ adds planets: the spaceport is the hand-off point between the planet game (per-server) and the space game (shared), so planet-side goods and space-side CC meet only there; landing and take-off are the same location, so one spaceport position per planet is enough in the data model.
+
 ## Done means
 - A new player can sign up, log in, see their ship in the starting system, click to fly, jump to the planet, open the galaxy map, jump to another star with the full animation, log out, log back in on another device, and resume in the same place.
 - The connectivity check passes for the generated galaxy.
