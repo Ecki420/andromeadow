@@ -99,6 +99,36 @@ Landing on planets, planet servers, world templates, space stations, docking, tr
 - **Every planet produces something and every planet must export something.** A planet with nothing to export is not allowed. World templates and host customisation set *what* and *how much*, never *whether*.
 - Design consequences to keep in mind when Rev 2+ adds planets: the spaceport is the hand-off point between the planet game (per-server) and the space game (shared), so planet-side goods and space-side CC meet only there; landing and take-off are the same location, so one spaceport position per planet is enough in the data model.
 
+## Rev 2 — Manual steering and a first weapon
+
+Rev 1 is complete (see "Done means" below). Rev 2 adds hands-on flying alongside point-and-click, plus a basic cannon so there is something to do with the left mouse button. No enemies, no damage model, no planets yet.
+
+### Controls (Carl's spec, 2026-10-17)
+- **Keyboard steering, independent of the mouse.** Arrow keys and WASD do the same thing:
+  - W / Up: throttle up toward cruise speed. S / Down: throttle down to a stop (no reverse in Rev 2).
+  - A / Left and D / Right: turn (yaw) left and right.
+  - Q / E: roll left and right (optional, cheap to add, can be dropped).
+- **Mouse turning only while the right mouse button is held.** Moving the mouse with RMB down turns the ship's nose (yaw and pitch). Releasing RMB stops mouse turning; the mouse alone never steers.
+- **Left mouse button fires the weapon.** Hold to keep firing at a fixed rate.
+
+### Defaults filled in by Claude (change if wrong)
+- **Point-and-click still works.** Clicking a star, planet or its label starts the autopilot exactly as in Rev 1. Left-clicking empty space fires the weapon. Any steering input (keys or RMB turning) cancels the autopilot and hands control to the player.
+- **Flight feel.** The ship accelerates and decelerates smoothly rather than snapping to speed. Turn rate is a ship stat alongside cruise speed and jump range, so later hulls can handle differently.
+- **Camera.** Stays behind the ship and follows its nose. Mouse wheel still zooms. The Rev 1 left-drag camera orbit is removed, since left-drag would now fire.
+- **Weapon.** One fixed forward cannon: glowing voxel bolts with a short lifetime and a cooldown, pooled so firing never allocates. No ammo, no heat, no sound yet.
+- **Practice targets.** A handful of drifting voxel asteroids near the starting system's planet that break apart when hit, so firing has feedback. Purely cosmetic; they respawn. Can be cut if time is short.
+- **Jumps and saving.** Unchanged. Charge-up locks steering as before. Velocity is not saved; the ship resumes at rest.
+- **HUD.** Adds a throttle/speed readout, a small crosshair while RMB is held, and a one-line hint of the keys.
+
+### Architecture rule
+Keyboard and mouse live in a new input layer beside `PointAndClick` and produce intents (throttle, yaw, pitch, roll, fire). `Ship` grows a manual-control path next to its flyTo path; it still never reads input directly.
+
+### Done means (Rev 2)
+- Player can take off from the autopilot with WASD or arrows, turn with RMB-held mouse, throttle up and down, and fly around the star and planet.
+- LMB fires bolts that travel and expire; hitting a practice asteroid breaks it.
+- Clicking a body still autopilots there; steering input cancels it.
+- Jumps, galaxy map, login and resume all still pass the Rev 1 checks.
+
 ## Done means
 - A new player can sign up, log in, see their ship in the starting system, click to fly, jump to the planet, open the galaxy map, jump to another star with the full animation, log out, log back in on another device, and resume in the same place.
 - The connectivity check passes for the generated galaxy.
