@@ -30,6 +30,31 @@ export const CONFIG = {
   /** While the ship is under way, write the save this often. */
   autosaveSeconds: 5,
 
+  // ---- Rev 2: manual steering ----
+  /** Radians of turn per pixel of mouse movement while the right button is held. */
+  mouseSensitivity: 0.0025,
+  /** How fast W/S move the throttle, in full-throttle units per second. */
+  throttleRate: 0.8,
+  /** Speed change per second toward the throttle's target speed. */
+  acceleration: 6,
+  /** Roll speed for Q/E, radians per second. */
+  rollRate: 1.6,
+
+  // ---- Rev 2: cannon ----
+  /** Shots per second while the left button is held. */
+  fireRate: 6,
+  /** World units per second. */
+  boltSpeed: 240,
+  /** Seconds a bolt lives before it vanishes. */
+  boltLife: 2.5,
+  /** Pool size; also the cap on bolts in flight. */
+  boltPool: 64,
+
+  // ---- Rev 2: practice asteroids ----
+  asteroidsPerSystem: 6,
+  /** Seconds before a destroyed asteroid comes back somewhere else. */
+  asteroidRespawnSeconds: 12,
+
   /** ID of the system every new player starts in. Must exist in the generated galaxy. */
   startingSystemIndex: 0,
 

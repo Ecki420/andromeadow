@@ -266,6 +266,30 @@ button.btn.ghost {
   line-height: 1.6;
 }
 
+#crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 1.5px solid rgba(76, 201, 240, 0.85);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(76, 201, 240, 0.5);
+}
+
+#crosshair::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 9px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 /* Map */
 #map-panel {
   left: 50%;

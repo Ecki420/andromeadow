@@ -7,6 +7,8 @@ import { DEFAULT_SHIP_ID, getShip } from "../ship/ShipData.ts";
 import { Ship } from "../ship/Ship.ts";
 import { SystemInstance, buildStarfield, type Body } from "../system/SystemInstance.ts";
 import { PointAndClick } from "../input/PointAndClick.ts";
+import { ManualControls } from "../input/ManualControls.ts";
+import { Weapon } from "../combat/Weapon.ts";
 import { CameraRig } from "./CameraRig.ts";
 import { JumpController } from "../jump/JumpController.ts";
 import { Tunnel } from "../jump/Tunnel.ts";
@@ -26,6 +28,8 @@ export class Game {
   private readonly rig: CameraRig;
   private readonly ship: Ship;
   private readonly input: PointAndClick;
+  private readonly controls: ManualControls;
+  private readonly weapon = new Weapon();
   private readonly jump = new JumpController();
   private readonly tunnel: Tunnel;
   private readonly map: GalaxyMap;
@@ -87,16 +91,17 @@ export class Game {
 
     this.input = new PointAndClick(canvas, {
       onPick: (x, y) => this.pick(x, y),
-      onOrbit: (dx, dy) => this.rig.orbit(dx, dy),
       onZoom: (d) => this.rig.zoom(d),
     });
+    this.controls = new ManualControls(canvas, (x, y) => this.bodyAt(x, y) !== null);
+    this.scene.add(this.weapon.mesh);
 
     this.jump.onPhase = (phase, req) => {
       if (phase === "tunnel") this.tunnel.intensity = req.kind === "star" ? 1 : 0.4;
       if (phase === "arriving") this.ui.flash();
       if (phase === "idle") {
         this.ui.setJumpOverlay(null);
-        this.input.enabled = true;
+        this.setInputEnabled(true);
       }
       this.updateLabelVisibility();
     };
@@ -157,14 +162,24 @@ export class Game {
 
   // ---- flying ------------------------------------------------------------
 
-  private pick(ndcX: number, ndcY: number): void {
-    if (!this.system || this.jump.busy) return;
+  /** Which clickable body, if any, is under a screen point. */
+  private bodyAt(ndcX: number, ndcY: number): Body | null {
+    if (!this.system || this.map.isOpen) return null;
     this.raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), this.rig.camera);
     const hits = this.raycaster.intersectObjects(this.system.clickable, true);
     const first = hits[0];
-    if (!first) return;
-    const body = this.system.bodyFor(first.object);
+    return first ? this.system.bodyFor(first.object) : null;
+  }
+
+  private pick(ndcX: number, ndcY: number): void {
+    if (this.jump.busy) return;
+    const body = this.bodyAt(ndcX, ndcY);
     if (body) this.flyToBody(body);
+  }
+
+  private setInputEnabled(on: boolean): void {
+    this.input.enabled = on;
+    this.controls.enabled = on;
   }
 
   private stopDistanceFor(body: Body): number {
@@ -200,7 +215,8 @@ export class Game {
   private beginInSystemJump(): void {
     const body = this.target;
     if (!body || this.jump.busy) return;
-    this.input.enabled = false;
+    this.setInputEnabled(false);
+    this.ship.stop();
     this.jump.begin({
       kind: "system",
       label: body.name,
@@ -215,8 +231,8 @@ export class Game {
     if (!dest) return;
     const origin = this.currentSystem;
     this.closeMap();
-    this.input.enabled = false;
-    this.ship.halt();
+    this.setInputEnabled(false);
+    this.ship.stop();
     this.jump.begin({
       kind: "star",
       label: dest.name,
@@ -248,7 +264,6 @@ export class Game {
     const stop = this.stopDistanceFor(body);
     const position = body.position.clone().addScaledVector(fromDirection, stop + this.approachDistance);
     this.ship.teleport(position, fromDirection.clone().negate());
-    this.rig.resetBehind();
     this.target = body;
     this.ship.flyTo(body.position, stop, body.name);
     this.dirty = true;
@@ -266,7 +281,7 @@ export class Game {
   private openMap(): void {
     if (this.jump.busy) return;
     this.map.show(this.currentIndex);
-    this.input.enabled = false;
+    this.setInputEnabled(false);
     this.ui.setMapOpen(true);
     this.ui.setMapSelection(null);
     this.updateLabelVisibility();
@@ -274,7 +289,7 @@ export class Game {
 
   private closeMap(): void {
     this.map.hide();
-    this.input.enabled = !this.jump.busy;
+    this.setInputEnabled(!this.jump.busy);
     this.ui.setMapOpen(false);
     this.updateLabelVisibility();
   }
@@ -363,7 +378,11 @@ export class Game {
       this.tunnel.update(dt);
       this.renderer.render(this.tunnel.scene, this.tunnel.camera);
     } else {
-      if (!this.jump.busy) this.ship.update(dt);
+      if (!this.jump.busy) {
+        this.stepFlight(dt);
+      } else {
+        this.ui.setCrosshair(false);
+      }
       this.rig.update(this.ship, dt);
       this.renderer.render(this.scene, this.rig.camera);
       this.systemLabels.render(this.scene, this.rig.camera);
@@ -372,10 +391,33 @@ export class Game {
     this.updateHud();
 
     // Periodic save while under way, so a crash mid-flight loses at most a few seconds.
-    if (this.ship.travelling && now - this.lastSaveAt > CONFIG.autosaveSeconds * 1000) void this.saveNow();
+    const moving = this.ship.travelling || this.ship.speed > 0.01;
+    if (moving && now - this.lastSaveAt > CONFIG.autosaveSeconds * 1000) void this.saveNow();
 
     requestAnimationFrame(this.frame);
   };
+
+  /** One frame of flying: steering intents, autopilot hand-off, movement, cannon, asteroids. */
+  private stepFlight(dt: number): void {
+    const m = this.controls.poll();
+    if (m.steered && this.ship.travelling) {
+      // Any hands-on input takes the ship off the autopilot.
+      this.ship.halt();
+      this.target = null;
+      this.refreshTargetButton();
+    }
+    if (!this.ship.travelling) this.ship.applyManual(m, dt);
+    this.ship.update(dt);
+
+    if (m.firing) this.weapon.fire(this.ship.position, this.ship.orientation, this.ship.speed);
+    const field = this.system?.asteroids;
+    const hits = this.weapon.update(dt, field ? field.targets : []);
+    if (field) {
+      for (const h of hits) field.hit(h.targetIndex);
+      field.update(dt);
+    }
+    this.ui.setCrosshair(m.looking);
+  }
 
   private updateHud(): void {
     const req = this.jump.current;
@@ -394,6 +436,9 @@ export class Game {
       const dist = Math.round(this.ship.remainingDistance());
       this.ui.setStatus(`Cruising to ${t.label} · ${dist} u · ETA ${formatSeconds(eta)}`);
       if (this.target && Math.floor(performance.now() / 500) % 2 === 0) this.refreshTargetButton();
+    } else if (this.ship.throttle > 0 || this.ship.speed > 0.05) {
+      const pct = Math.round(this.ship.throttle * 100);
+      this.ui.setStatus(`Manual · throttle ${pct}% · ${this.ship.speed.toFixed(1)} u/s`);
     } else {
       this.ui.setStatus(`Holding position · ${this.ship.data.name}`);
     }

@@ -63,10 +63,12 @@ export class UI {
       </div>
 
       <div id="hud-help" class="panel hidden" data-ref="hudHelp">
-        click a body or its label: fly there<br/>
-        drag: look around &middot; wheel: zoom<br/>
-        galaxy map: jump between stars
+        W/S or &uarr;/&darr;: throttle &middot; A/D or &larr;/&rarr;: turn &middot; Q/E: roll<br/>
+        hold right mouse: steer with mouse &middot; left mouse: fire<br/>
+        click a body or its label: autopilot there &middot; wheel: zoom
       </div>
+
+      <div id="crosshair" class="hidden" data-ref="crosshair"></div>
 
       <div id="map-panel" class="panel hidden" data-ref="mapPanel">
         <h1>Galaxy map</h1>
@@ -157,7 +159,12 @@ export class UI {
   }
 
   setStatus(text: string): void {
-    this.ref("status").textContent = text;
+    const el = this.ref("status");
+    if (el.textContent !== text) el.textContent = text;
+  }
+
+  setCrosshair(on: boolean): void {
+    this.ref("crosshair").classList.toggle("hidden", !on);
   }
 
   setJumpTargetEnabled(enabled: boolean, label?: string): void {

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import type { StarSystem } from "../galaxy/types.ts";
 import { disposeObject, voxelSphere } from "./voxel.ts";
+import { AsteroidField } from "../combat/AsteroidField.ts";
 
 export type BodyKind = "star" | "planet";
 
@@ -22,6 +23,8 @@ export class SystemInstance {
   readonly bodies: Body[] = [];
   /** Objects that respond to a click (raycast targets). */
   readonly clickable: THREE.Object3D[] = [];
+  /** Rev 2 practice targets, drifting near the planet. */
+  readonly asteroids: AsteroidField;
 
   constructor(
     readonly system: StarSystem,
@@ -66,6 +69,10 @@ export class SystemInstance {
       this.group.add(orbitRing(planet.orbitRadius));
       this.addBody("planet", planet.name, mesh, position, planet.radius, onLabelClick);
     });
+
+    const planet = this.bodies.find((b) => b.kind === "planet") ?? this.bodies[0];
+    this.asteroids = new AsteroidField(planet ? planet.position : new THREE.Vector3(), system.index + 101);
+    this.group.add(this.asteroids.group);
   }
 
   private addBody(
@@ -103,6 +110,7 @@ export class SystemInstance {
   }
 
   dispose(): void {
+    this.asteroids.dispose();
     this.group.removeFromParent();
     disposeObject(this.group);
     // CSS2DObjects drop their DOM element on the "removed" event.

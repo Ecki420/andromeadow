@@ -11,6 +11,8 @@ export interface ShipData {
   cruiseSpeed: number;
   /** Galaxy-map units. Rev 1: a single fixed value for every ship, from config. */
   jumpRange: number;
+  /** Radians per second of yaw/pitch at full stick. */
+  turnRate: number;
   /** Rough hull length in world units, drives the voxel build. */
   size: number;
   /** 0xRRGGBB */
@@ -23,6 +25,7 @@ export const SHIPS: Record<string, ShipData> = {
     name: "Wren Mk I",
     cruiseSpeed: 12,
     jumpRange: CONFIG.jumpRange,
+    turnRate: 1.6,
     size: 6,
     color: 0xd9dde3,
   },

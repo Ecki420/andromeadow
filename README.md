@@ -60,10 +60,20 @@ supabase/schema.sql      the one table Rev 1 needs
 
 ## Controls
 
-- Click a body, its floating label, or its entry in the system panel: fly there at cruise speed.
-- Drag: look around. Wheel: zoom.
+Point-and-click (Rev 1):
+
+- Click a body, its floating label, or its entry in the system panel: autopilot there at cruise speed.
 - **Jump to target** appears when the target is further than the one-minute approach distance.
 - **Galaxy map**: gold is the current star, cyan stars are within jump range. Select one and press Jump.
+
+Manual flight (Rev 2):
+
+- **W / Up** throttle up, **S / Down** throttle down. **A / Left** and **D / Right** turn. **Q / E** roll.
+- Hold the **right mouse button** and move the mouse to steer the nose. A crosshair shows while it is held.
+- **Left mouse button** fires the cannon. Clicking on a body still autopilots there instead.
+- Any steering input takes the ship off the autopilot at its current speed.
+- Wheel zooms the chase camera, which follows the ship's nose.
+- A few drifting asteroids near each planet break apart when hit and come back a little later.
 
 ## Design notes kept for later revisions
 
